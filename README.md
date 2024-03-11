@@ -17,6 +17,7 @@ RFAA is not accurate for all cases, but produces useful error estimates to allow
 - [Predicting covalently modified proteins](#covale)
 - [Understanding model outputs](#outputs)
 - [Conclusion](#conclusion)
+- [Troubleshooting](#troubleshooting)
 
 <a id="set-up"></a>
 ### Setup/Installation
@@ -252,3 +253,55 @@ Here are the confidence metrics:
 <a id="conclusion"></a>
 ### Conclusion
 We expect that RFAA will continue to improve and will share new models as we create them. Additionally, we are excited to see how the community uses RFAA and RFdiffusionAA and would love to get feedback and review PRs as necessary. 
+
+<a id="troubleshooting"></a>
+### Troubleshooting
+For these Errors:
+```
+Running PSIPRED
+./make_msa.sh: line 123: 7u7w_protein/A/log/make_ss.stdout: No such file or directory
+Running hhsearch
+cat: 7u7w_protein/A/t000_.ss2: No such file or directory
+
+[...]
+
+Error executing job with overrides: []
+Traceback (most recent call last):
+  File "/mnt/TempUSBGrueni/noah/FoldAA/RoseTTAFold-All-Atom/rf2aa/run_inference.py", line 206, in main
+    runner.infer()
+  File "/mnt/TempUSBGrueni/noah/FoldAA/RoseTTAFold-All-Atom/rf2aa/run_inference.py", line 153, in infer
+    self.parse_inference_config()
+  File "/mnt/TempUSBGrueni/noah/FoldAA/RoseTTAFold-All-Atom/rf2aa/run_inference.py", line 46, in parse_inference_config
+    protein_input = generate_msa_and_load_protein(
+  File "/mnt/TempUSBGrueni/noah/FoldAA/RoseTTAFold-All-Atom/rf2aa/data/protein.py", line 93, in generate_msa_and_load_protein
+    return load_protein(str(msa_file), str(hhr_file), str(atab_file), model_runner)
+  File "/mnt/TempUSBGrueni/noah/FoldAA/RoseTTAFold-All-Atom/rf2aa/data/protein.py", line 66, in load_protein
+    xyz_t, t1d, mask_t, _ = get_templates(
+  File "/mnt/TempUSBGrueni/noah/FoldAA/RoseTTAFold-All-Atom/rf2aa/data/protein.py", line 30, in get_templates
+    ) = parse_templates_raw(ffdb, hhr_fn=hhr_fn, atab_fn=atab_fn)
+  File "/mnt/TempUSBGrueni/noah/FoldAA/RoseTTAFold-All-Atom/rf2aa/data/parsers.py", line 628, in parse_templates_raw
+    for l in open(atab_fn, "r").readlines():
+FileNotFoundError: [Errno 2] No such file or directory: '7u7w_protein/A/t000_.atab'
+```
+or 
+```
+Running PSIPRED
+Running hhsearch
+cat: 7u7w_protein/A/t000_.msa0.a3m: No such file or directory
+- 11:23:04.314 ERROR: In /big/martin/hh-suite/src/hhalignment.cpp:223: Read:
+
+- 11:23:04.314 ERROR: 	sequence ss_pred contains no residues.
+```
+This is a possible solution that worked for me, after https://github.com/Sabryr/ProteinFolding/issues/3 and https://github.com/RosettaCommons/RoseTTAFold/issues/13
+```
+#standing in the RFAA home_dir 
+wget https://ftp.ncbi.nlm.nih.gov/blast/executables/legacy.NOTSUPPORTED/2.2.26/blast-2.2.26-x64-linux.tar.gz
+tar -zxvf blast-2.2.26-x64-linux.tar.gz
+```
+Then open input_prep/make_ss.sh and add the export BLASTMAT line
+```
+#!/bin/bash
+# From: https://github.com/RosettaCommons/RoseTTAFold
+export BLASTMAT=$FULLPATHTO/blast-2.2.26/data/
+DATADIR="$CONDA_PREFIX/share/psipred_4.01/data"
+```
